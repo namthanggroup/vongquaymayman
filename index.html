@@ -1,9 +1,3 @@
-# 1) index.html (Frontend – host trên GitHub Pages, mobile-first, 1 file duy nhất)
-
-> Thay `API_URL` bằng URL Web App của Apps Script.
-> Bạn có thể đổi logo, gif taxi, màu sắc, text trong khối `CONFIG`.
-
-```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -22,19 +16,13 @@
       color:#0b0a00; font-weight:700; box-shadow: 0 8px 24px rgba(34,197,94,.35);
     }
     .btn-primary:disabled { opacity:.6; }
-
-    /* Wheel */
     .wheel-wrap { position: relative; width: 320px; height: 320px; margin: 0 auto; }
     canvas#wheel { width: 320px; height: 320px; display:block; }
     .pointer { position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:0; height:0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-bottom: 28px solid #f59e0b; filter: drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
-
-    /* Popup */
     .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:50; }
     .modal.show { display:flex; }
     .modal-card { background:#fff; border-radius:18px; padding:20px; width:min(92vw, 420px); text-align:center; }
     .badge { background:var(--brand); color:#052e16; font-weight:700; padding:2px 10px; border-radius:999px; }
-
-    /* Subtle shimmer for headings */
     .shimmer { background: linear-gradient(90deg, #7fff00 0%, #bbff66 45%, #7fff00 100%); -webkit-background-clip:text; background-clip:text; color: transparent; animation: shim 3s infinite linear; }
     @keyframes shim { 0%{filter:saturate(1)} 50%{filter:saturate(1.4)} 100%{filter:saturate(1)} }
   </style>
@@ -51,12 +39,10 @@
   </header>
 
   <main class="max-w-md mx-auto px-4 pb-24">
-    <!-- Brand GIF / banner -->
     <div class="mb-4 rounded-xl overflow-hidden border border-lime-300">
       <img id="taxiGif" class="w-full h-36 object-cover" alt="Taxi điện Nam Thắng"/>
     </div>
 
-    <!-- Welcome & form card -->
     <section id="step-form" class="card rounded-2xl p-4 space-y-4">
       <div class="space-y-1">
         <div class="text-sm text-neutral-700">Chúc mừng Quý khách đã đi chuyến xe may mắn!</div>
@@ -92,9 +78,11 @@
             <span>📍</span>
             <select id="tinh" class="w-full rounded-xl border border-lime-300 px-3 py-2 bg-white" required>
               <option value="" disabled selected>-- Chọn tỉnh/thành --</option>
-              <option value="Kiên Giang">Kiên Giang</option>
-              <option value="An Giang">An Giang</option>
-              <option value="Cà Mau">Cà Mau</option>
+              <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
+              <option value="Đà Nẵng">Đà Nẵng</option>
+              <option value="Quảng Trị">Quảng Trị</option>
+              <option value="Quảng Bình">Quảng Bình</option>
+              <option value="ALL">Khác (áp dụng chung)</option>
             </select>
           </div>
         </div>
@@ -103,7 +91,6 @@
       </form>
     </section>
 
-    <!-- Step: ask to join -->
     <section id="step-join" class="card rounded-2xl p-4 mt-4 hidden">
       <p class="font-semibold text-center">Bạn có muốn tham gia vòng quay may mắn?</p>
       <div class="mt-3 grid grid-cols-2 gap-3">
@@ -112,7 +99,6 @@
       </div>
     </section>
 
-    <!-- Step: wheel -->
     <section id="step-wheel" class="card rounded-2xl p-4 mt-4 hidden">
       <div class="text-center">
         <p class="text-sm">Chạm nút để quay – hiệu ứng 3-4 giây 🎵</p>
@@ -132,7 +118,6 @@
     </footer>
   </main>
 
-  <!-- Modal result -->
   <div id="modal" class="modal">
     <div class="modal-card">
       <div class="text-sm mb-1"><span class="badge">🎉 Xin chúc mừng!</span></div>
@@ -152,25 +137,17 @@
   </div>
 
   <script>
-    // ====== CONFIG (dễ tuỳ biến) ======
     const CONFIG = {
-      API_URL: 'https://script.google.com/macros/s/AKfycbx-ezwLaf6LCN1bRxtRnqdWAS9G6Rr-_RmAAiaeEZVhJ3A5loU9_rZA43v2q0xnk2Dz/exec', // <- THAY bằng URL web app của Apps Script
-      ZALO_OA_URL: 'https://taxinamthang.vn/taiapp',
-      HOTLINE: '0949.69.14.14',
-      LOGO_URL: 'https://ibb.co/G4H1WRt2', // đổi link logo
-      TAXI_GIF_URL: 'https://cdn-icons-mp4.flaticon.com/512/16075/16075549.mp4', // gif taxi
+      API_URL: 'https://script.google.com/macros/s/AKfycbx-ezwLaf6LCN1bRxtRnqdWAS9G6Rr-_RmAAiaeEZVhJ3A5loU9_rZA43v2q0xnk2Dz/exec',
+      ZALO_OA_URL: 'https://zalo.me/yourOA',
+      HOTLINE: '08xx.xxx.xxx',
+      LOGO_URL: 'https://i.imgur.com/2nGQdY9.png',
+      TAXI_GIF_URL: 'https://i.imgur.com/L0sH1sP.gif',
       BRAND_COLOR: '#7fff00',
       WHEEL_COLORS: ['#bef264','#86efac','#a7f3d0','#fde68a','#93c5fd','#fca5a5'],
-      ICONS: {
-        voucher: '🎟️',
-        the_nap: '🔋',
-        nuoc_suoi: '💧',
-        ao_mua: '☔',
-        default: '🎁'
-      }
+      ICONS: { voucher:'🎟️', the_nap:'🔋', nuoc_suoi:'💧', ao_mua:'☔', default:'🎁' }
     };
 
-    // ====== Helpers ======
     const $ = (s) => document.querySelector(s);
     const yearEl = $('#year');
     const logo = $('#logo');
@@ -187,7 +164,6 @@
 
     function maskPhone(p){ return p.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2'); }
 
-    // --- JSONP fetch (để gọi Apps Script từ GitHub Pages, tránh CORS/preflight) ---
     function jsonp(params, timeout=15000){
       return new Promise((resolve, reject)=>{
         const cb = 'cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
@@ -204,12 +180,10 @@
       });
     }
 
-    // ====== State ======
     let user = { ho_ten:'', sdt:'', ma_chuyen:'', tinh:'' };
-    let wheelItems = []; // [{id, name}] từ backend
+    let wheelItems = [];
     let spinning = false;
 
-    // ====== Form submit ======
     $('#infoForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
       const ho_ten = $('#ho_ten').value.trim();
@@ -238,16 +212,14 @@
       }
     });
 
-    // ====== Join / No ======
     $('#btnJoinNo').addEventListener('click', ()=>{
       alert('Cảm ơn Quý khách! Hẹn gặp lại trên hành trình tiếp theo.');
     });
     $('#btnJoinYes').addEventListener('click', async ()=>{
-      // load wheel config theo tỉnh
       try {
         const res = await jsonp({ action:'getWheel', payload: JSON.stringify({ tinh: user.tinh }) });
         if(!res.ok){ alert(res.error||'Không thể tải vòng quay.'); return; }
-        wheelItems = res.items; // [{id, name}]
+        wheelItems = res.items;
         if(!wheelItems.length){ alert('Hiện tại tỉnh này đã hết phần thưởng.'); return; }
         drawWheel(wheelItems);
         $('#step-join').classList.add('hidden');
@@ -255,7 +227,6 @@
       } catch(err){ alert('Lỗi tải vòng quay.'); }
     });
 
-    // ====== Wheel drawing ======
     const wheelCanvas = document.getElementById('wheel');
     const ctx = wheelCanvas.getContext('2d');
 
@@ -282,7 +253,6 @@
         ctx.fillStyle = CONFIG.WHEEL_COLORS[i % CONFIG.WHEEL_COLORS.length];
         ctx.fill();
 
-        // text & emoji
         ctx.save();
         ctx.translate(cx,cy);
         ctx.rotate(start + angle/2);
@@ -296,14 +266,12 @@
         ctx.restore();
       }
 
-      // center circle
       ctx.beginPath(); ctx.arc(cx,cy,44,0,Math.PI*2); ctx.fillStyle='#fef08a'; ctx.fill();
       ctx.font = 'bold 14px Poppins'; ctx.fillStyle='#0b0a00';
       ctx.textAlign='center'; ctx.fillText('QUAY', cx, cy-2);
       ctx.font = 'bold 10px Poppins'; ctx.fillText('NGAY', cx, cy+12);
     }
 
-    // ====== Spin ======
     function playTing(duration=120){
       const a = new (window.AudioContext||window.webkitAudioContext)();
       const o = a.createOscillator(); const g=a.createGain();
@@ -322,7 +290,6 @@
       if(spinning) return; if(!wheelItems.length) return;
       spinning = true; $('#btnSpin').disabled = true; $('#wheelMsg').textContent = '';
 
-      // gọi backend để random & trừ số lượng
       let result;
       try {
         result = await jsonp({ action:'spin', payload: JSON.stringify({ sdt: user.sdt, ma_chuyen_di: user.ma_chuyen, tinh: user.tinh }) });
@@ -340,7 +307,6 @@
       const idx = wheelItems.findIndex(it=>it.id===pickedId);
       const n = wheelItems.length; const slice = 360/n;
       const targetIndex = (idx>=0? idx: 0);
-      // quay 5 vòng + đáp vào giữa ô targetIndex (đỉnh ở 0deg)
       const finalDeg = (360*5) + (360 - (targetIndex*slice + slice/2));
       startTings();
       wheelCanvas.style.transition = 'transform 3.4s cubic-bezier(.17,.67,.24,1)';
@@ -349,25 +315,16 @@
       setTimeout(()=>{
         stopTings();
         confetti({ particleCount: 160, spread: 70, origin: { y: 0.5 } });
-        $('#prizeTitle').textContent = '🎉 Chúc mừng Quý khách ' + maskPhone(user.sdt);
-        $('#prizeBody').textContent = 'Bạn đã trúng: ' + result.prize.name;
-        $('#prizeIcon').src = 'https://i.imgur.com/5DTPx22.png'; // icon quà (có thể đổi)
-        $('#modal').classList.add('show');
-        $('#wheelMsg').textContent = 'Kết quả: '+result.prize.name;
+        document.getElementById('prizeTitle').textContent = '🎉 Chúc mừng Quý khách ' + maskPhone(user.sdt);
+        document.getElementById('prizeBody').textContent = 'Bạn đã trúng: ' + result.prize.name;
+        document.getElementById('prizeIcon').src = 'https://i.imgur.com/5DTPx22.png';
+        document.getElementById('modal').classList.add('show');
+        document.getElementById('wheelMsg').textContent = 'Kết quả: '+result.prize.name;
         spinning=false; $('#btnSpin').disabled=false;
       }, 3600);
     });
 
-    $('#btnCloseModal').addEventListener('click', ()=> $('#modal').classList.remove('show'));
+    document.getElementById('btnCloseModal').addEventListener('click', ()=> document.getElementById('modal').classList.remove('show'));
   </script>
 </body>
 </html>
-```
-
----
-
-# 2) Apps Script (Backend – Web App, đọc/ghi Google Sheets)
-
-> **Thay `SHEET_ID = 'xxx'`** bằng ID thật (bạn đã nêu). Deploy: *Deploy > New deployment > Web app > Anyone*. Frontend sẽ gọi bằng JSONP (GET), không dính CORS.
-
-```js
