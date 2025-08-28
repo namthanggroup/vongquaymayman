@@ -1,0 +1,375 @@
+# 1) index.html (Frontend – host trên GitHub Pages, mobile-first, 1 file duy nhất)
+
+> Thay `API_URL` bằng URL Web App của Apps Script.
+> Bạn có thể đổi logo, gif taxi, màu sắc, text trong khối `CONFIG`.
+
+```html
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Vòng quay may mắn – Taxi Điện Nam Thắng</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root { --brand:#7fff00; }
+    html, body { font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0a0a0a; color: #111; }
+    .card { background: #f6ffef; border: 1px solid #d9f99d; }
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #eab308);
+      color:#0b0a00; font-weight:700; box-shadow: 0 8px 24px rgba(34,197,94,.35);
+    }
+    .btn-primary:disabled { opacity:.6; }
+
+    /* Wheel */
+    .wheel-wrap { position: relative; width: 320px; height: 320px; margin: 0 auto; }
+    canvas#wheel { width: 320px; height: 320px; display:block; }
+    .pointer { position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:0; height:0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-bottom: 28px solid #f59e0b; filter: drop-shadow(0 4px 8px rgba(0,0,0,.25)); }
+
+    /* Popup */
+    .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); z-index:50; }
+    .modal.show { display:flex; }
+    .modal-card { background:#fff; border-radius:18px; padding:20px; width:min(92vw, 420px); text-align:center; }
+    .badge { background:var(--brand); color:#052e16; font-weight:700; padding:2px 10px; border-radius:999px; }
+
+    /* Subtle shimmer for headings */
+    .shimmer { background: linear-gradient(90deg, #7fff00 0%, #bbff66 45%, #7fff00 100%); -webkit-background-clip:text; background-clip:text; color: transparent; animation: shim 3s infinite linear; }
+    @keyframes shim { 0%{filter:saturate(1)} 50%{filter:saturate(1.4)} 100%{filter:saturate(1)} }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="py-4">
+    <div class="max-w-md mx-auto px-4 flex items-center gap-3">
+      <img id="logo" class="w-10 h-10 rounded-full border border-lime-300" alt="Logo" />
+      <div>
+        <h1 class="text-xl font-extrabold shimmer">Taxi Điện Nam Thắng</h1>
+        <p class="text-xs text-neutral-600">“Nhanh – Xanh – An toàn”</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 pb-24">
+    <!-- Brand GIF / banner -->
+    <div class="mb-4 rounded-xl overflow-hidden border border-lime-300">
+      <img id="taxiGif" class="w-full h-36 object-cover" alt="Taxi điện Nam Thắng"/>
+    </div>
+
+    <!-- Welcome & form card -->
+    <section id="step-form" class="card rounded-2xl p-4 space-y-4">
+      <div class="space-y-1">
+        <div class="text-sm text-neutral-700">Chúc mừng Quý khách đã đi chuyến xe may mắn!</div>
+        <div class="text-base font-semibold" style="color:#166534">Hãy thử vận may để nhận quà từ Nam Thắng.</div>
+      </div>
+
+      <form id="infoForm" class="space-y-3">
+        <div>
+          <label class="text-sm font-semibold">Họ và tên</label>
+          <div class="mt-1 flex items-center gap-2">
+            <span>👤</span>
+            <input id="ho_ten" class="w-full rounded-xl border border-lime-300 px-3 py-2" placeholder="Nguyễn Văn A" required />
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-semibold">Số điện thoại</label>
+          <div class="mt-1 flex items-center gap-2">
+            <span>📱</span>
+            <input id="sdt" class="w-full rounded-xl border border-lime-300 px-3 py-2" placeholder="0xxxxxxxxx" inputmode="numeric" pattern="0\d{9}" maxlength="10" required />
+          </div>
+          <p class="text-xs text-neutral-600 mt-1">*Đủ 10 số, bắt đầu bằng 0</p>
+        </div>
+        <div>
+          <label class="text-sm font-semibold">Mã chuyến đi</label>
+          <div class="mt-1 flex items-center gap-2">
+            <span>🧾</span>
+            <input id="ma_chuyen" class="w-full rounded-xl border border-lime-300 px-3 py-2" placeholder="VD: NTX-2025-001" required />
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-semibold">Tỉnh/Thành</label>
+          <div class="mt-1 flex items-center gap-2">
+            <span>📍</span>
+            <select id="tinh" class="w-full rounded-xl border border-lime-300 px-3 py-2 bg-white" required>
+              <option value="" disabled selected>-- Chọn tỉnh/thành --</option>
+              <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
+              <option value="Đà Nẵng">Đà Nẵng</option>
+              <option value="Quảng Trị">Quảng Trị</option>
+              <option value="Quảng Bình">Quảng Bình</option>
+              <option value="ALL">Khác (áp dụng chung)</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btnSubmit" class="btn-primary w-full rounded-2xl py-3 text-lg">Gửi thông tin</button>
+      </form>
+    </section>
+
+    <!-- Step: ask to join -->
+    <section id="step-join" class="card rounded-2xl p-4 mt-4 hidden">
+      <p class="font-semibold text-center">Bạn có muốn tham gia vòng quay may mắn?</p>
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <button id="btnJoinNo" class="rounded-xl py-3 bg-neutral-200 font-semibold">Không</button>
+        <button id="btnJoinYes" class="btn-primary rounded-xl py-3">Tham gia</button>
+      </div>
+    </section>
+
+    <!-- Step: wheel -->
+    <section id="step-wheel" class="card rounded-2xl p-4 mt-4 hidden">
+      <div class="text-center">
+        <p class="text-sm">Chạm nút để quay – hiệu ứng 3-4 giây 🎵</p>
+      </div>
+      <div class="mt-3 wheel-wrap">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="320" height="320"></canvas>
+      </div>
+      <div class="mt-4 text-center">
+        <button id="btnSpin" class="btn-primary rounded-2xl px-6 py-3 text-lg">QUAY NGAY</button>
+        <p id="wheelMsg" class="text-sm text-neutral-700 mt-2"></p>
+      </div>
+    </section>
+
+    <footer class="mt-6 text-center text-xs text-neutral-400">
+      © <span id="year"></span> Taxi Điện Nam Thắng • Hotline: <a id="hotline" class="underline" target="_blank"></a>
+    </footer>
+  </main>
+
+  <!-- Modal result -->
+  <div id="modal" class="modal">
+    <div class="modal-card">
+      <div class="text-sm mb-1"><span class="badge">🎉 Xin chúc mừng!</span></div>
+      <h3 class="text-xl font-bold" style="color:#166534" id="prizeTitle">Bạn vừa trúng quà</h3>
+      <p class="mt-1 text-sm" id="prizeBody"></p>
+      <img id="prizeIcon" class="mx-auto my-3 w-20 h-20" alt="gift" />
+      <div class="mt-2 text-xs text-neutral-500">Voucher sẽ có hiệu lực từ ngày mai.</div>
+      <div class="mt-4 grid gap-2">
+        <a id="nextRide" class="btn-primary rounded-xl py-3 text-center" target="_blank">Đặt chuyến xe tiếp theo</a>
+        <button id="btnCloseModal" class="rounded-xl py-2 bg-neutral-200 font-semibold">Đóng</button>
+      </div>
+      <div class="mt-4 flex items-center justify-center gap-2 text-xs text-neutral-600">
+        <img id="logoSmall" class="w-5 h-5 rounded-full border" alt="logo" />
+        <span>Taxi Nam Thắng • <span id="hotline2"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== CONFIG (dễ tuỳ biến) ======
+    const CONFIG = {
+      API_URL: 'YOUR_APPS_SCRIPT_WEB_APP_URL', // <- THAY bằng URL web app của Apps Script
+      ZALO_OA_URL: 'https://zalo.me/yourOA',
+      HOTLINE: '08xx.xxx.xxx',
+      LOGO_URL: 'https://i.imgur.com/2nGQdY9.png', // đổi link logo
+      TAXI_GIF_URL: 'https://i.imgur.com/L0sH1sP.gif', // gif taxi
+      BRAND_COLOR: '#7fff00',
+      WHEEL_COLORS: ['#bef264','#86efac','#a7f3d0','#fde68a','#93c5fd','#fca5a5'],
+      ICONS: {
+        voucher: '🎟️',
+        the_nap: '🔋',
+        nuoc_suoi: '💧',
+        ao_mua: '☔',
+        default: '🎁'
+      }
+    };
+
+    // ====== Helpers ======
+    const $ = (s) => document.querySelector(s);
+    const yearEl = $('#year');
+    const logo = $('#logo');
+    const taxiGif = $('#taxiGif');
+    const logoSmall = $('#logoSmall');
+    const hotline = $('#hotline');
+    const hotline2 = $('#hotline2');
+    const nextRide = $('#nextRide');
+
+    yearEl.textContent = new Date().getFullYear();
+    logo.src = CONFIG.LOGO_URL; logoSmall.src = CONFIG.LOGO_URL; taxiGif.src = CONFIG.TAXI_GIF_URL;
+    hotline.textContent = CONFIG.HOTLINE; hotline.href = 'tel:'+CONFIG.HOTLINE; hotline2.textContent = CONFIG.HOTLINE;
+    nextRide.href = CONFIG.ZALO_OA_URL;
+
+    function maskPhone(p){ return p.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2'); }
+
+    // --- JSONP fetch (để gọi Apps Script từ GitHub Pages, tránh CORS/preflight) ---
+    function jsonp(params, timeout=15000){
+      return new Promise((resolve, reject)=>{
+        const cb = 'cb_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+        params.callback = cb;
+        const query = new URLSearchParams(params).toString();
+        const url = CONFIG.API_URL + '?' + query;
+        const s = document.createElement('script');
+        s.src = url;
+        let timer = setTimeout(()=>{ cleanup(); reject(new Error('Timeout')); }, timeout);
+        window[cb] = (data)=>{ cleanup(); resolve(data); };
+        function cleanup(){ delete window[cb]; s.remove(); clearTimeout(timer); }
+        s.onerror = ()=>{ cleanup(); reject(new Error('Network error')); };
+        document.body.appendChild(s);
+      });
+    }
+
+    // ====== State ======
+    let user = { ho_ten:'', sdt:'', ma_chuyen:'', tinh:'' };
+    let wheelItems = []; // [{id, name}] từ backend
+    let spinning = false;
+
+    // ====== Form submit ======
+    $('#infoForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const ho_ten = $('#ho_ten').value.trim();
+      const sdt = $('#sdt').value.trim();
+      const ma_chuyen = $('#ma_chuyen').value.trim();
+      const tinh = $('#tinh').value;
+
+      if(!ho_ten || !sdt || !ma_chuyen || !tinh){ alert('Vui lòng điền đủ thông tin.'); return; }
+      if(!/^0\d{9}$/.test(sdt)){ alert('SĐT phải đủ 10 số và bắt đầu bằng 0.'); return; }
+
+      $('#btnSubmit').disabled = true;
+      try {
+        const res = await jsonp({ action:'submitInfo', payload: JSON.stringify({ ho_ten, sdt, ma_chuyen_di:ma_chuyen, tinh }) });
+        if(!res.ok){
+          if(res.code==='ALREADY_TODAY') alert('Quý khách đã tham gia hôm nay. Vui lòng quay lại vào ngày mai.');
+          else if(res.code==='PHONE_INVALID') alert('Số điện thoại không hợp lệ.');
+          else alert('Không thể gửi thông tin. '+(res.error||''));
+          $('#btnSubmit').disabled = false; return;
+        }
+        user = { ho_ten, sdt, ma_chuyen, tinh };
+        $('#step-form').classList.add('hidden');
+        $('#step-join').classList.remove('hidden');
+      } catch(err){
+        alert('Lỗi mạng. Vui lòng thử lại.');
+        $('#btnSubmit').disabled = false;
+      }
+    });
+
+    // ====== Join / No ======
+    $('#btnJoinNo').addEventListener('click', ()=>{
+      alert('Cảm ơn Quý khách! Hẹn gặp lại trên hành trình tiếp theo.');
+    });
+    $('#btnJoinYes').addEventListener('click', async ()=>{
+      // load wheel config theo tỉnh
+      try {
+        const res = await jsonp({ action:'getWheel', payload: JSON.stringify({ tinh: user.tinh }) });
+        if(!res.ok){ alert(res.error||'Không thể tải vòng quay.'); return; }
+        wheelItems = res.items; // [{id, name}]
+        if(!wheelItems.length){ alert('Hiện tại tỉnh này đã hết phần thưởng.'); return; }
+        drawWheel(wheelItems);
+        $('#step-join').classList.add('hidden');
+        $('#step-wheel').classList.remove('hidden');
+      } catch(err){ alert('Lỗi tải vòng quay.'); }
+    });
+
+    // ====== Wheel drawing ======
+    const wheelCanvas = document.getElementById('wheel');
+    const ctx = wheelCanvas.getContext('2d');
+
+    function iconFor(name){
+      const n = (name||'').toLowerCase();
+      if(n.includes('voucher')) return CONFIG.ICONS.voucher;
+      if(n.includes('nạp')||n.includes('thẻ')) return CONFIG.ICONS.the_nap;
+      if(n.includes('nước')) return CONFIG.ICONS.nuoc_suoi;
+      if(n.includes('áo mưa')||n.includes('ao mua')) return CONFIG.ICONS.ao_mua;
+      return CONFIG.ICONS.default;
+    }
+
+    function drawWheel(items){
+      const size = 320; const r = size/2; const cx=r, cy=r;
+      ctx.clearRect(0,0,size,size);
+      const n = Math.max(1, items.length);
+      const angle = (Math.PI*2)/n;
+      for(let i=0;i<n;i++){
+        const start = i*angle, end = start + angle;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.arc(cx,cy,r-6,start,end);
+        ctx.closePath();
+        ctx.fillStyle = CONFIG.WHEEL_COLORS[i % CONFIG.WHEEL_COLORS.length];
+        ctx.fill();
+
+        // text & emoji
+        ctx.save();
+        ctx.translate(cx,cy);
+        ctx.rotate(start + angle/2);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0b0a00';
+        ctx.font = '24px Poppins';
+        ctx.fillText(iconFor(items[i].name), r-70, 10);
+        ctx.font = '12px Poppins';
+        const label = items[i].name.length>18? items[i].name.slice(0,18)+'…': items[i].name;
+        ctx.fillText(label, r-80, 28);
+        ctx.restore();
+      }
+
+      // center circle
+      ctx.beginPath(); ctx.arc(cx,cy,44,0,Math.PI*2); ctx.fillStyle='#fef08a'; ctx.fill();
+      ctx.font = 'bold 14px Poppins'; ctx.fillStyle='#0b0a00';
+      ctx.textAlign='center'; ctx.fillText('QUAY', cx, cy-2);
+      ctx.font = 'bold 10px Poppins'; ctx.fillText('NGAY', cx, cy+12);
+    }
+
+    // ====== Spin ======
+    function playTing(duration=120){
+      const a = new (window.AudioContext||window.webkitAudioContext)();
+      const o = a.createOscillator(); const g=a.createGain();
+      o.type='triangle'; o.frequency.value = 1800; o.connect(g); g.connect(a.destination);
+      g.gain.setValueAtTime(0.0001, a.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.22, a.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime+duration/1000);
+      o.start(); o.stop(a.currentTime+duration/1000+0.02);
+    }
+
+    let ringTimer = null;
+    function startTings(){ ringTimer = setInterval(()=>playTing(90), 250); }
+    function stopTings(){ clearInterval(ringTimer); ringTimer=null; }
+
+    $('#btnSpin').addEventListener('click', async ()=>{
+      if(spinning) return; if(!wheelItems.length) return;
+      spinning = true; $('#btnSpin').disabled = true; $('#wheelMsg').textContent = '';
+
+      // gọi backend để random & trừ số lượng
+      let result;
+      try {
+        result = await jsonp({ action:'spin', payload: JSON.stringify({ sdt: user.sdt, ma_chuyen_di: user.ma_chuyen, tinh: user.tinh }) });
+      } catch(e){ spinning=false; $('#btnSpin').disabled=false; alert('Lỗi mạng.'); return; }
+
+      if(!result.ok){
+        spinning=false; $('#btnSpin').disabled=false;
+        if(result.code==='ALREADY_TODAY') alert('Quý khách đã tham gia hôm nay. Hẹn gặp lại vào ngày mai!');
+        else if(result.code==='NO_PRIZE') alert('Hiện tại tỉnh này đã hết phần thưởng.');
+        else alert(result.error||'Không thể quay lúc này.');
+        return;
+      }
+
+      const pickedId = result.prize.id;
+      const idx = wheelItems.findIndex(it=>it.id===pickedId);
+      const n = wheelItems.length; const slice = 360/n;
+      const targetIndex = (idx>=0? idx: 0);
+      // quay 5 vòng + đáp vào giữa ô targetIndex (đỉnh ở 0deg)
+      const finalDeg = (360*5) + (360 - (targetIndex*slice + slice/2));
+      startTings();
+      wheelCanvas.style.transition = 'transform 3.4s cubic-bezier(.17,.67,.24,1)';
+      requestAnimationFrame(()=>{ wheelCanvas.style.transform = `rotate(${finalDeg}deg)`; });
+
+      setTimeout(()=>{
+        stopTings();
+        confetti({ particleCount: 160, spread: 70, origin: { y: 0.5 } });
+        $('#prizeTitle').textContent = '🎉 Chúc mừng Quý khách ' + maskPhone(user.sdt);
+        $('#prizeBody').textContent = 'Bạn đã trúng: ' + result.prize.name;
+        $('#prizeIcon').src = 'https://i.imgur.com/5DTPx22.png'; // icon quà (có thể đổi)
+        $('#modal').classList.add('show');
+        $('#wheelMsg').textContent = 'Kết quả: '+result.prize.name;
+        spinning=false; $('#btnSpin').disabled=false;
+      }, 3600);
+    });
+
+    $('#btnCloseModal').addEventListener('click', ()=> $('#modal').classList.remove('show'));
+  </script>
+</body>
+</html>
+```
+
+---
+
+# 2) Apps Script (Backend – Web App, đọc/ghi Google Sheets)
+
+> **Thay `SHEET_ID = 'xxx'`** bằng ID thật (bạn đã nêu). Deploy: *Deploy > New deployment > Web app > Anyone*. Frontend sẽ gọi bằng JSONP (GET), không dính CORS.
+
+```js
