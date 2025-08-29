@@ -225,6 +225,7 @@
         if(!res.ok){ alert(res.error||'Không thể tải vòng quay.'); return; }
         wheelItems = res.items;
         if(!wheelItems.length){ alert('Hiện tại tỉnh này đã hết phần thưởng.'); return; }
+        drawWheel(wheelItems);
         setCanvasRotation(0);   // đảm bảo currentAngle = 0 trước lượt quay đầu
         $('#step-join').classList.add('hidden');
         $('#step-wheel').classList.remove('hidden');
