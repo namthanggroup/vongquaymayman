@@ -11,10 +11,7 @@
     :root { --brand:#7fff00; }
     html, body { font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #0a0a0a; color: #111; }
     .card { background: #f6ffef; border: 1px solid #d9f99d; }
-    .btn-primary {
-      background: linear-gradient(135deg, #22c55e, #eab308);
-      color:#0b0a00; font-weight:700; box-shadow: 0 8px 24px rgba(34,197,94,.35);
-    }
+    .btn-primary { background: linear-gradient(135deg, #22c55e, #eab308); color:#0b0a00; font-weight:700; box-shadow: 0 8px 24px rgba(34,197,94,.35); }
     .btn-primary:disabled { opacity:.6; }
     .wheel-wrap { position: relative; width: 320px; height: 320px; margin: 0 auto; }
     canvas#wheel { width: 320px; height: 320px; display:block; }
@@ -145,6 +142,7 @@
       WHEEL_COLORS: ['#bef264','#86efac','#a7f3d0','#fde68a','#93c5fd','#fca5a5'],
       ICONS: { voucher:'🎟️', the_nap:'🔋', nuoc_suoi:'💧', ao_mua:'☔', default:'🎁' }
     };
+    const POINTER_TOP_OFFSET = 270; // mũi tên ở 12h
 
     const $ = (s) => document.querySelector(s);
     const yearEl = $('#year');
@@ -181,7 +179,10 @@
     let user = { ho_ten:'', sdt:'', ma_chuyen:'', tinh:'' };
     let wheelItems = [];
     let spinning = false;
-    let currentAngle = 0; // góc hiện tại của bánh xe (0-359)
+    let currentAngle = 0;
+
+    const wheelCanvas = document.getElementById('wheel');
+    const ctx = wheelCanvas.getContext('2d');
 
     function setCanvasRotation(deg){
       currentAngle = ((deg % 360) + 360) % 360;
@@ -219,6 +220,7 @@
     $('#btnJoinNo').addEventListener('click', ()=>{
       alert('Cảm ơn Quý khách! Hẹn gặp lại trên hành trình tiếp theo.');
     });
+
     $('#btnJoinYes').addEventListener('click', async ()=>{
       try {
         const res = await jsonp({ action:'getWheel', payload: JSON.stringify({ tinh: user.tinh }) });
@@ -226,14 +228,11 @@
         wheelItems = res.items;
         if(!wheelItems.length){ alert('Hiện tại tỉnh này đã hết phần thưởng.'); return; }
         drawWheel(wheelItems);
-        setCanvasRotation(0);   // đảm bảo currentAngle = 0 trước lượt quay đầu
+        setCanvasRotation(0);  // reset góc
         $('#step-join').classList.add('hidden');
         $('#step-wheel').classList.remove('hidden');
       } catch(err){ alert('Lỗi tải vòng quay.'); }
     });
-
-    const wheelCanvas = document.getElementById('wheel');
-    const ctx = wheelCanvas.getContext('2d');
 
     function iconFor(name){
       const n = (name||'').toLowerCase();
@@ -342,12 +341,9 @@
 
       const pickedId = result.prize.id;
       const idx = wheelItems.findIndex(it=>it.id===pickedId);
-      const n = wheelItems.length; const slice = 360/n;
+      const n = wheelItems.length; 
+      const slice = 360/n;
       const targetIndex = (idx>=0? idx: 0);
-      //const targetCenter = (360 - (targetIndex*slice + slice/2)) % 360; mũi tên ở hướng 12h nên bị sai
-
-      // Mũi tên ở 12h => offset 270°
-      const POINTER_TOP_OFFSET = 270;
       const targetCenter = ((POINTER_TOP_OFFSET - (targetIndex*slice + slice/2)) % 360 + 360) % 360;
 
       smoothSpinTo(targetCenter, ()=>{
