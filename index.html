@@ -225,7 +225,7 @@
         if(!res.ok){ alert(res.error||'Không thể tải vòng quay.'); return; }
         wheelItems = res.items;
         if(!wheelItems.length){ alert('Hiện tại tỉnh này đã hết phần thưởng.'); return; }
-        drawWheel(wheelItems);
+        setCanvasRotation(0);   // đảm bảo currentAngle = 0 trước lượt quay đầu
         $('#step-join').classList.add('hidden');
         $('#step-wheel').classList.remove('hidden');
       } catch(err){ alert('Lỗi tải vòng quay.'); }
@@ -343,7 +343,11 @@
       const idx = wheelItems.findIndex(it=>it.id===pickedId);
       const n = wheelItems.length; const slice = 360/n;
       const targetIndex = (idx>=0? idx: 0);
-      const targetCenter = (360 - (targetIndex*slice + slice/2)) % 360;
+      //const targetCenter = (360 - (targetIndex*slice + slice/2)) % 360; mũi tên ở hướng 12h nên bị sai
+
+      // Mũi tên ở 12h => offset 270°
+      const POINTER_TOP_OFFSET = 270;
+      const targetCenter = ((POINTER_TOP_OFFSET - (targetIndex*slice + slice/2)) % 360 + 360) % 360;
 
       smoothSpinTo(targetCenter, ()=>{
         confetti({ particleCount: 160, spread: 70, origin: { y: 0.5 } });
