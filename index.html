@@ -181,6 +181,12 @@
     let user = { ho_ten:'', sdt:'', ma_chuyen:'', tinh:'' };
     let wheelItems = [];
     let spinning = false;
+    let currentAngle = 0; // góc hiện tại của bánh xe (0-359)
+
+    function setCanvasRotation(deg){
+      currentAngle = ((deg % 360) + 360) % 360;
+      wheelCanvas.style.transform = `rotate(${currentAngle}deg)`;
+    }
 
     $('#infoForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
@@ -231,7 +237,7 @@
     function iconFor(name){
       const n = (name||'').toLowerCase();
       if(n.includes('voucher')) return CONFIG.ICONS.voucher;
-      if(n.includes('nạp')||n.includes('thẻ')) return CONFIG.ICONS.the_nap;
+      if(n.includes('nạp')||n.includes('the')) return CONFIG.ICONS.the_nap;
       if(n.includes('nước')) return CONFIG.ICONS.nuoc_suoi;
       if(n.includes('áo mưa')||n.includes('ao mua')) return CONFIG.ICONS.ao_mua;
       return CONFIG.ICONS.default;
@@ -284,19 +290,51 @@
     function startTings(){ ringTimer = setInterval(()=>playTing(90), 250); }
     function stopTings(){ clearInterval(ringTimer); ringTimer=null; }
 
+    function easeOutCubic(x){ return 1 - Math.pow(1 - x, 3); }
+    function smoothSpinTo(targetDeg, onDone){
+      const totalDeg = 360*4 + ((targetDeg - currentAngle + 360) % 360);
+      let t = 0, duration = 3600;
+      const start = currentAngle;
+      startTings();
+      function step(ts0){
+        if(!step.t0) step.t0 = ts0;
+        t = ts0 - step.t0;
+        const p = Math.min(1, t/duration);
+        const deg = start + totalDeg*easeOutCubic(p);
+        setCanvasRotation(deg);
+        if(p < 1) {
+          requestAnimationFrame(step);
+        } else {
+          stopTings();
+          if(onDone) onDone();
+        }
+      }
+      wheelCanvas.style.willChange = 'transform';
+      requestAnimationFrame(step);
+    }
+
     $('#btnSpin').addEventListener('click', async ()=>{
       if(spinning) return; if(!wheelItems.length) return;
       spinning = true; $('#btnSpin').disabled = true; $('#wheelMsg').textContent = '';
 
       let result;
       try {
-        result = await jsonp({ action:'spin', payload: JSON.stringify({ sdt: user.sdt, ma_chuyen_di: user.ma_chuyen, tinh: user.tinh }) });
+        result = await jsonp({ 
+          action:'spin', 
+          payload: JSON.stringify({ 
+            ho_ten: user.ho_ten,
+            sdt: user.sdt, 
+            ma_chuyen_di: user.ma_chuyen, 
+            tinh: user.tinh 
+          }) 
+        });
       } catch(e){ spinning=false; $('#btnSpin').disabled=false; alert('Lỗi mạng.'); return; }
 
       if(!result.ok){
         spinning=false; $('#btnSpin').disabled=false;
         if(result.code==='ALREADY_TODAY') alert('Quý khách đã tham gia hôm nay. Hẹn gặp lại vào ngày mai!');
         else if(result.code==='NO_PRIZE') alert('Hiện tại tỉnh này đã hết phần thưởng.');
+        else if(result.code==='PHONE_INVALID') alert('Số điện thoại không hợp lệ.');
         else alert(result.error||'Không thể quay lúc này.');
         return;
       }
@@ -305,13 +343,9 @@
       const idx = wheelItems.findIndex(it=>it.id===pickedId);
       const n = wheelItems.length; const slice = 360/n;
       const targetIndex = (idx>=0? idx: 0);
-      const finalDeg = (360*5) + (360 - (targetIndex*slice + slice/2));
-      startTings();
-      wheelCanvas.style.transition = 'transform 3.4s cubic-bezier(.17,.67,.24,1)';
-      requestAnimationFrame(()=>{ wheelCanvas.style.transform = `rotate(${finalDeg}deg)`; });
+      const targetCenter = (360 - (targetIndex*slice + slice/2)) % 360;
 
-      setTimeout(()=>{
-        stopTings();
+      smoothSpinTo(targetCenter, ()=>{
         confetti({ particleCount: 160, spread: 70, origin: { y: 0.5 } });
         document.getElementById('prizeTitle').textContent = '🎉 Chúc mừng Quý khách ' + maskPhone(user.sdt);
         document.getElementById('prizeBody').textContent = 'Bạn đã trúng: ' + result.prize.name;
@@ -319,7 +353,7 @@
         document.getElementById('modal').classList.add('show');
         document.getElementById('wheelMsg').textContent = 'Kết quả: '+result.prize.name;
         spinning=false; $('#btnSpin').disabled=false;
-      }, 3600);
+      });
     });
 
     document.getElementById('btnCloseModal').addEventListener('click', ()=> document.getElementById('modal').classList.remove('show'));
